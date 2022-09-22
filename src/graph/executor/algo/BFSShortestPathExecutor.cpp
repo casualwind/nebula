@@ -101,7 +101,7 @@ Status BFSShortestPathExecutor::buildPath(bool reverse) {
   const auto& nextVidVar = reverse ? pathNode_->rightVidVar() : pathNode_->leftVidVar();
   ectx_->setResult(nextVidVar, ResultBuilder().value(std::move(nextStepVids)).build());
   if (uniqueDst.size() == 0) {
-    ectx_->setValue(setTerminateEarlyVar, true);
+    ectx_->setValue(terminateEarlyVar_, true);
     return Status::OK();
   }
   visitedVids.insert(std::make_move_iterator(uniqueDst.begin()),
