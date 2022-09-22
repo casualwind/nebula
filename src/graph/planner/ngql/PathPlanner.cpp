@@ -111,7 +111,7 @@ SubPlan PathPlanner::singlePairPlan(PlanNode* left, PlanNode* right) {
   auto steps = pathCtx_->steps.steps();
   auto terminateEarlyVar = qctx->vctx()->anonVarGen()->getVar();
   qctx->ectx()->setValue(terminateEarlyVar, false);
-  auto* path = BFSShortestPath::make(qctx, left, right, steps, terminateEarlyVar);
+  auto* path = BFSShortestPath::make(qctx, left, right, steps);
   path->setLeftVidVar(pathCtx_->fromVidsVar);
   path->setRightVidVar(pathCtx_->toVidsVar);
   path->setColNames({kPathStr});
