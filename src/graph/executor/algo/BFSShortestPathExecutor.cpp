@@ -102,6 +102,7 @@ Status BFSShortestPathExecutor::buildPath(bool reverse) {
   ectx_->setResult(nextVidVar, ResultBuilder().value(std::move(nextStepVids)).build());
   if (uniqueDst.size() == 0) {
     ectx_->setValue(terminateEarlyVar_, true);
+    return Status::OK();
   }
   visitedVids.insert(std::make_move_iterator(uniqueDst.begin()),
                      std::make_move_iterator(uniqueDst.end()));

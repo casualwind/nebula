@@ -20,10 +20,13 @@ Status HdfsCommandHelper::ls(const std::string& hdfsHost,
       "hdfs dfs -ls hdfs://%s:%d%s", hdfsHost.c_str(), hdfsPort, hdfsPath.c_str());
   LOG(INFO) << "Running HDFS Command: " << command;
   try {
-    folly::Subprocess proc(std::vector<std::string>({command}));
+    folly::Subprocess proc(std::vector<std::string>({"/bin/bash", "-c", command}));
     auto result = proc.wait();
     if (!result.exited()) {
       return Status::Error("Failed to ls hdfs");
+    } else if (result.exitStatus() != 0) {
+      LOG(INFO) << "Failed to ls: " << result.str();
+      return Status::Error("Failed to ls hdfs, errno: %d", result.exitStatus());
     } else {
       return Status::OK();
     }
@@ -43,10 +46,13 @@ Status HdfsCommandHelper::copyToLocal(const std::string& hdfsHost,
                                      localPath.c_str());
   LOG(INFO) << "Running HDFS Command: " << command;
   try {
-    folly::Subprocess proc(std::vector<std::string>({command}));
+    folly::Subprocess proc(std::vector<std::string>({"/bin/bash", "-c", command}));
     auto result = proc.wait();
     if (!result.exited()) {
       return Status::Error("Failed to download from hdfs");
+    } else if (result.exitStatus() != 0) {
+      LOG(INFO) << "Failed to download: " << result.str();
+      return Status::Error("Failed to download from hdfs, errno: %d", result.exitStatus());
     } else {
       return Status::OK();
     }

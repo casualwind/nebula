@@ -412,12 +412,14 @@ Feature: TTLTest
       """
     Then the result should be, in any order:
       | person.id |
+      | EMPTY     |
     When executing query:
       """
       FETCH PROP ON person "2" YIELD person.id as id
       """
     Then the result should be, in any order:
-      | id |
+      | id    |
+      | EMPTY |
     When executing query:
       """
       FETCH PROP ON career "2" YIELD career.id;

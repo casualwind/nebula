@@ -208,7 +208,7 @@ StoragePlan<VertexID> GetPropProcessor::buildTagPlan(RuntimeContext* context,
     plan.addNode(std::move(tag));
   }
   auto output = std::make_unique<GetTagPropNode>(
-      context, tags, result, filter_ == nullptr ? nullptr : filter_->clone(), limit_);
+      context, tags, result, filter_ == nullptr ? nullptr : filter_->clone(), limit_, &tagContext_);
   for (auto* tag : tags) {
     output->addDependency(tag);
   }
@@ -272,7 +272,8 @@ nebula::cpp2::ErrorCode GetPropProcessor::checkAndBuildContexts(const cpp2::GetP
       return code;
     }
   }
-  code = buildFilter(req, [](const cpp2::GetPropRequest& r) -> const std::string* {
+  code = buildFilter(req, [](const cpp2::GetPropRequest& r, bool onlyTag) -> const std::string* {
+    UNUSED(onlyTag);
     if (r.filter_ref().has_value()) {
       return r.get_filter();
     } else {
