@@ -32,9 +32,7 @@ class LogicExecutorsTest : public testing::Test {
     return path;
   }
 
- protected:
-  std::unique_ptr<QueryContext> qctx_;
-  ObjectPool* pool_;
+
 };
 
 TEST_F(LogicExecutorsTest, FSP) {
