@@ -6,6 +6,8 @@
 #include <folly/Benchmark.h>
 #include <gtest/gtest.h>
 
+#include <memory>
+
 #include "common/expression/VariableExpression.h"
 #include "common/fs/TempDir.h"
 #include "graph/context/QueryContext.h"
@@ -21,7 +23,7 @@
 
 namespace nebula {
 namespace graph {
-class LogicExecutorsTest : public testing::Test {
+class FindShortestPath : public testing::Test {
  protected:
   Path createPath(const std::vector<std::string>& steps) {
     Path path;
@@ -32,6 +34,125 @@ class LogicExecutorsTest : public testing::Test {
     return path;
   }
 
+    // Topology is below
+  // a->b, a->c
+  // b->a, b->c
+  // c->a, c->f, c->g
+  // d->a, d->c, d->e
+  // e->b
+  // f->h
+  // g->f, g->h, g->k
+  // h->x, k->x
+
+
+  void singleSourceInit() {
+    // From: {a}  To: {x}
+    {  //  1 step
+       //  From: a->b, a->c
+      DataSet ds;
+      ds.colNames = gnColNames_;
+      Row row;
+      row.values.emplace_back("a");
+      row.values.emplace_back(Value());
+      List edges;
+      for (const auto& dst : {"b", "c"}) {
+        List edge;
+        edge.values.emplace_back(EDGE_TYPE);
+        edge.values.emplace_back(dst);
+        edge.values.emplace_back(EDGE_RANK);
+        edges.values.emplace_back(std::move(edge));
+      }
+      row.values.emplace_back(edges);
+      row.values.emplace_back(Value());
+      ds.rows.emplace_back(std::move(row));
+      single1StepFrom_ = std::move(ds);
+
+      // To: x<-h, x<-k
+      DataSet ds1;
+      ds1.colNames = gnColNames_;
+      Row row1;
+      row1.values.emplace_back("x");
+      row1.values.emplace_back(Value());
+      List edges1;
+      for (const auto& dst : {"h", "k"}) {
+        List edge;
+        edge.values.emplace_back(-EDGE_TYPE);
+        edge.values.emplace_back(dst);
+        edge.values.emplace_back(EDGE_RANK);
+        edges1.values.emplace_back(std::move(edge));
+      }
+      row1.values.emplace_back(edges1);
+      row1.values.emplace_back(Value());
+      ds1.rows.emplace_back(std::move(row1));
+      single1StepTo_ = std::move(ds1);
+    }
+    {  // 2 step
+       // From: b->a, b->c, c->a, c->f, c->g
+      DataSet ds;
+      ds.colNames = gnColNames_;
+      std::unordered_map<std::string, std::vector<std::string>> data(
+          {{"b", {"a", "c"}}, {"c", {"a", "f", "g"}}});
+      for (const auto& src : data) {
+        Row row;
+        row.values.emplace_back(src.first);
+        row.values.emplace_back(Value());
+        List edges;
+        for (const auto& dst : src.second) {
+          List edge;
+          edge.values.emplace_back(EDGE_TYPE);
+          edge.values.emplace_back(dst);
+          edge.values.emplace_back(EDGE_RANK);
+          edges.values.emplace_back(std::move(edge));
+        }
+        row.values.emplace_back(edges);
+        row.values.emplace_back(Value());
+        ds.rows.emplace_back(std::move(row));
+      }
+      single2StepFrom_ = std::move(ds);
+
+      // To : h<-f, h<-g, k<-g
+      DataSet ds1;
+      ds1.colNames = gnColNames_;
+      std::unordered_map<std::string, std::vector<std::string>> data1(
+          {{"h", {"f", "g"}}, {"k", {"g"}}});
+      for (const auto& src : data1) {
+        Row row;
+        row.values.emplace_back(src.first);
+        row.values.emplace_back(Value());
+        List edges;
+        for (const auto& dst : src.second) {
+          List edge;
+          edge.values.emplace_back(-EDGE_TYPE);
+          edge.values.emplace_back(dst);
+          edge.values.emplace_back(EDGE_RANK);
+          edges.values.emplace_back(std::move(edge));
+        }
+        row.values.emplace_back(edges);
+        row.values.emplace_back(Value());
+        ds1.rows.emplace_back(std::move(row));
+      }
+      single2StepTo_ = std::move(ds1);
+    }
+  }
+
+
+    void SetUp() override {
+    qctx_ = std::make_unique<QueryContext>();
+    singleSourceInit();
+  }
+
+  protected:
+  std::unique_ptr<QueryContext> qctx_;
+  const int EDGE_TYPE = 1;
+  const int EDGE_RANK = 0;
+  DataSet single1StepFrom_;
+  DataSet single1StepTo_;
+  DataSet single2StepFrom_;
+  DataSet single2StepTo_;
+  const std::vector<std::string> pathColNames_ = {"path"};
+  const std::vector<std::string> gnColNames_ = {
+      kVid, "_stats", "_edge:+like:_type:_dst:_rank", "_expr"};
+};
 
 };
 
