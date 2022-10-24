@@ -3,25 +3,21 @@
  * This source code is licensed under Apache 2.0 License.
  */
 
-#include <gtest/gtest.h>
-
-#include "graph/context/QueryContext.h"
-#include "graph/executor/algo/BFSShortestPathExecutor.h"
 #include <folly/Benchmark.h>
 #include <gtest/gtest.h>
 
-#include "common/fs/TempDir.h"
-#include "storage/exec/EdgeNode.h"
-#include "storage/query/GetNeighborsProcessor.h"
-#include "storage/test/QueryTestUtils.h"
-
 #include "common/expression/VariableExpression.h"
+#include "common/fs/TempDir.h"
 #include "graph/context/QueryContext.h"
+#include "graph/executor/algo/BFSShortestPathExecutor.h"
 #include "graph/executor/logic/LoopExecutor.h"
 #include "graph/executor/logic/SelectExecutor.h"
 #include "graph/executor/logic/StartExecutor.h"
 #include "graph/planner/plan/Logic.h"
 #include "graph/planner/plan/Query.h"
+#include "storage/exec/EdgeNode.h"
+#include "storage/query/GetNeighborsProcessor.h"
+#include "storage/test/QueryTestUtils.h"
 
 namespace nebula {
 namespace graph {
@@ -37,15 +33,7 @@ class LogicExecutorsTest : public testing::Test {
   ObjectPool* pool_;
 };
 
-TEST_F(LogicExecutorsTest, Start) {
-  auto* start = StartNode::make(qctx_.get());
-  auto startExe = std::make_unique<StartExecutor>(start, qctx_.get());
-  auto f = startExe->execute();
-  auto status = std::move(f).get();
-  EXPECT_TRUE(status.ok());
-}
-
-TEST_F(LogicExecutorsTest, Loop) {
+TEST_F(LogicExecutorsTest, FSP) {
   std::string counter = "counter";
   qctx_->ectx()->setValue(counter, 0);
   // ++counter{0} <= 5
@@ -77,37 +65,17 @@ TEST_F(LogicExecutorsTest, Loop) {
   EXPECT_FALSE(value.getBool());
 }
 
-TEST_F(LogicExecutorsTest, Select) {
-  {
-    auto* start = StartNode::make(qctx_.get());
-    auto condition = ConstantExpression::make(pool_, true);
-    auto* select = Select::make(qctx_.get(), start, start, start, condition);
-
-    auto selectExe = Executor::create(select, qctx_.get());
-
-    auto f = selectExe->execute();
-    auto status = std::move(f).get();
-    EXPECT_TRUE(status.ok());
-    auto& result = qctx_->ectx()->getResult(select->outputVar());
-    auto& value = result.value();
-    EXPECT_TRUE(value.isBool());
-    EXPECT_TRUE(value.getBool());
-  }
-  {
-    auto* start = StartNode::make(qctx_.get());
-    auto condition = ConstantExpression::make(pool_, false);
-    auto* select = Select::make(qctx_.get(), start, start, start, condition);
-
-    auto selectExe = Executor::create(select, qctx_.get());
-
-    auto f = selectExe->execute();
-    auto status = std::move(f).get();
-    EXPECT_TRUE(status.ok());
-    auto& result = qctx_->ectx()->getResult(select->outputVar());
-    auto& value = result.value();
-    EXPECT_TRUE(value.isBool());
-    EXPECT_FALSE(value.getBool());
-  }
-}
 }  // namespace graph
 }  // namespace nebula
+
+int main(int argc, char** argv) {
+  folly::init(&argc, &argv, true);LAGS_max_rank);
+  if (FLAGS_go_record) {
+    nebula::fs::TempDir rootPath("/tmp/FindShortestPathBenchmark.XXXXXX");
+    nebula::storage::setUp(rootPath.path(), FLAGS_max_rank);
+
+    folly::runBenchmarks();
+  }
+  gCluster.reset();
+  return 0;
+}
