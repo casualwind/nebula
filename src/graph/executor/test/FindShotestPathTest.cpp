@@ -23,9 +23,13 @@ namespace nebula {
 namespace graph {
 class LogicExecutorsTest : public testing::Test {
  protected:
-  void SetUp() override {
-    qctx_ = std::make_unique<QueryContext>();
-    pool_ = qctx_->objPool();
+  Path createPath(const std::vector<std::string>& steps) {
+    Path path;
+    path.src = Vertex(steps[0], {});
+    for (size_t i = 1; i < steps.size(); ++i) {
+      path.steps.emplace_back(Step(Vertex(steps[i], {}), EDGE_TYPE, "like", EDGE_RANK, {}));
+    }
+    return path;
   }
 
  protected:
