@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <string>
 
 #include "common/expression/VariableExpression.h"
 #include "common/fs/TempDir.h"
@@ -154,7 +155,180 @@ class FindShortestPath : public testing::Test {
       kVid, "_stats", "_edge:+like:_type:_dst:_rank", "_expr"};
 };
 
-};
+
+
+TEST_F(FindShortestPath, singleSourceShortestPath) {
+  int steps = 5;
+  std::string leftVidVar = "leftVid";
+  std::string rightVidVar = "rightVid";
+  std::string fromGNInput = "fromGNInput";
+  std::string toGNInput = "toGNInput";
+  qctx_->symTable()->newVariable(fromGNInput);
+  qctx_->symTable()->newVariable(toGNInput);
+  {
+    qctx_->symTable()->newVariable(leftVidVar);
+    DataSet fromVid;
+    fromVid.colNames = {nebula::kVid};
+    Row row;
+    row.values.emplace_back("a");
+    fromVid.rows.emplace_back(std::move(row));
+    ResultBuilder builder;
+    builder.value(std::move(fromVid)).iter(Iterator::Kind::kSequential);
+    qctx_->ectx()->setResult(leftVidVar, builder.build());
+  }
+  {
+    qctx_->symTable()->newVariable(rightVidVar);
+    DataSet toVid;
+    toVid.colNames = {nebula::kVid};
+    Row row;
+    row.values.emplace_back("x");
+    toVid.rows.emplace_back(std::move(row));
+    ResultBuilder builder;
+    builder.value(std::move(toVid)).iter(Iterator::Kind::kSequential);
+    qctx_->ectx()->setResult(rightVidVar, builder.build());
+  }
+  auto fromGN = StartNode::make(qctx_.get());
+  auto toGN = StartNode::make(qctx_.get());
+
+  auto* path = BFSShortestPath::make(qctx_.get(), fromGN, toGN, steps);
+  path->setLeftVar(fromGNInput);
+  path->setRightVar(toGNInput);
+  path->setLeftVidVar(leftVidVar);
+  path->setRightVidVar(rightVidVar);
+  path->setColNames(pathColNames_);
+
+  auto pathExe = std::make_unique<BFSShortestPathExecutor>(path, qctx_.get());
+  // Step 1
+  {
+    {
+      ResultBuilder builder;
+      List datasets;
+      datasets.values.emplace_back(std::move(single1StepFrom_));
+      builder.value(std::move(datasets)).iter(Iterator::Kind::kGetNeighbors);
+      qctx_->ectx()->setResult(fromGNInput, builder.build());
+    }
+    {
+      ResultBuilder builder;
+      List datasets;
+      datasets.values.emplace_back(std::move(single1StepTo_));
+      builder.value(std::move(datasets)).iter(Iterator::Kind::kGetNeighbors);
+      qctx_->ectx()->setResult(toGNInput, builder.build());
+    }
+    auto future = pathExe->execute();
+    auto status = std::move(future).get();
+    EXPECT_TRUE(status.ok());
+    auto& result = qctx_->ectx()->getResult(path->outputVar());
+
+    DataSet expected;
+    expected.colNames = pathColNames_;
+    auto resultDs = result.value().getDataSet();
+    EXPECT_EQ(resultDs, expected);
+    EXPECT_EQ(result.state(), Result::State::kSuccess);
+    {
+      DataSet expectLeftVid;
+      expectLeftVid.colNames = {nebula::kVid};
+      for (const auto& vid : {"b", "c"}) {
+        Row row;
+        row.values.emplace_back(vid);
+        expectLeftVid.rows.emplace_back(std::move(row));
+      }
+      auto& resultVid = qctx_->ectx()->getResult(leftVidVar);
+      auto resultLeftVid = resultVid.value().getDataSet();
+      std::sort(resultLeftVid.rows.begin(), resultLeftVid.rows.end());
+      std::sort(expectLeftVid.rows.begin(), expectLeftVid.rows.end());
+      EXPECT_EQ(resultLeftVid, expectLeftVid);
+      EXPECT_EQ(result.state(), Result::State::kSuccess);
+    }
+    {
+      DataSet expectRightVid;
+      expectRightVid.colNames = {nebula::kVid};
+      for (const auto& vid : {"h", "k"}) {
+        Row row;
+        row.values.emplace_back(vid);
+        expectRightVid.rows.emplace_back(std::move(row));
+      }
+      auto& resultVid = qctx_->ectx()->getResult(rightVidVar);
+      auto resultRightVid = resultVid.value().getDataSet();
+      std::sort(resultRightVid.rows.begin(), resultRightVid.rows.end());
+      std::sort(expectRightVid.rows.begin(), expectRightVid.rows.end());
+      EXPECT_EQ(resultRightVid, expectRightVid);
+      EXPECT_EQ(result.state(), Result::State::kSuccess);
+    }
+  }
+  // 2 Step
+  {
+    {
+      ResultBuilder builder;
+      List datasets;
+      datasets.values.emplace_back(std::move(single2StepFrom_));
+      builder.value(std::move(datasets)).iter(Iterator::Kind::kGetNeighbors);
+      qctx_->ectx()->setResult(fromGNInput, builder.build());
+    }
+    {
+      ResultBuilder builder;
+      List datasets;
+      datasets.values.emplace_back(std::move(single2StepTo_));
+      builder.value(std::move(datasets)).iter(Iterator::Kind::kGetNeighbors);
+      qctx_->ectx()->setResult(toGNInput, builder.build());
+    }
+    auto future = pathExe->execute();
+    auto status = std::move(future).get();
+    EXPECT_TRUE(status.ok());
+    auto& result = qctx_->ectx()->getResult(path->outputVar());
+
+    DataSet expected;
+    expected.colNames = pathColNames_;
+    std::vector<std::vector<std::string>> paths(
+        {{"a", "c", "f", "h", "x"}, {"a", "c", "g", "h", "x"}, {"a", "c", "g", "k", "x"}});
+    for (const auto& p : paths) {
+      Row row;
+      row.values.emplace_back(createPath(p));
+      expected.rows.emplace_back(std::move(row));
+    }
+    auto resultDs = result.value().getDataSet();
+    std::sort(expected.rows.begin(), expected.rows.end());
+    std::sort(resultDs.rows.begin(), resultDs.rows.end());
+    EXPECT_EQ(resultDs, expected);
+    EXPECT_EQ(result.state(), Result::State::kSuccess);
+    {
+      DataSet expectLeftVid;
+      expectLeftVid.colNames = {nebula::kVid};
+      for (const auto& vid : {"f", "g"}) {
+        Row row;
+        row.values.emplace_back(vid);
+        expectLeftVid.rows.emplace_back(std::move(row));
+      }
+      auto& resultVid = qctx_->ectx()->getResult(leftVidVar);
+      auto resultLeftVid = resultVid.value().getDataSet();
+      std::sort(resultLeftVid.rows.begin(), resultLeftVid.rows.end());
+      std::sort(expectLeftVid.rows.begin(), expectLeftVid.rows.end());
+      EXPECT_EQ(resultLeftVid, expectLeftVid);
+      EXPECT_EQ(result.state(), Result::State::kSuccess);
+    }
+    {
+      DataSet expectRightVid;
+      expectRightVid.colNames = {nebula::kVid};
+      for (const auto& vid : {"f", "g"}) {
+        Row row;
+        row.values.emplace_back(vid);
+        expectRightVid.rows.emplace_back(std::move(row));
+      }
+      auto& resultVid = qctx_->ectx()->getResult(rightVidVar);
+      auto resultRightVid = resultVid.value().getDataSet();
+      std::sort(resultRightVid.rows.begin(), resultRightVid.rows.end());
+      std::sort(expectRightVid.rows.begin(), expectRightVid.rows.end());
+      EXPECT_EQ(resultRightVid, expectRightVid);
+      EXPECT_EQ(result.state(), Result::State::kSuccess);
+    }
+  }
+}
+
+
+}// namespace graph;
+
+
+
+
 
 TEST_F(LogicExecutorsTest, FSP) {
   std::string counter = "counter";
@@ -188,7 +362,6 @@ TEST_F(LogicExecutorsTest, FSP) {
   EXPECT_FALSE(value.getBool());
 }
 
-}  // namespace graph
 }  // namespace nebula
 
 int main(int argc, char** argv) {
