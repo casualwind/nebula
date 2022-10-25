@@ -96,6 +96,7 @@ nebula_add_test(
         DedupTest.cpp
         LimitTest.cpp
         FindPathTest.cpp
+        FindShortestPathTest.cpp
         SampleTest.cpp
         SortTest.cpp
         TopNTest.cpp

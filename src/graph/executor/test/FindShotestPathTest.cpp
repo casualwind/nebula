@@ -323,14 +323,14 @@ TEST_F(FindShortestPath, singleSourceShortestPath) {
 }  // namespace nebula
 
 
-int main(int argc, char** argv) {
-  folly::init(&argc, &argv, true);LAGS_max_rank);
-  if (FLAGS_go_record) {
-    nebula::fs::TempDir rootPath("/tmp/FindShortestPathBenchmark.XXXXXX");
-    nebula::storage::setUp(rootPath.path(), FLAGS_max_rank);
-
-    folly::runBenchmarks();
-  }
-  gCluster.reset();
-  return 0;
-}
+//int main(int argc, char** argv) {
+//  folly::init(&argc, &argv, true);LAGS_max_rank);
+//  if (FLAGS_go_record) {
+//    nebula::fs::TempDir rootPath("/tmp/FindShortestPathBenchmark.XXXXXX");
+//    nebula::storage::setUp(rootPath.path(), FLAGS_max_rank);
+//
+//    folly::runBenchmarks();
+//  }
+//  gCluster.reset();
+//  return 0;
+//}
