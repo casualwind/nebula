@@ -35,7 +35,7 @@ class FindShortestPath : public testing::Test {
     return path;
   }
 
-    // Topology is below
+  // Topology is below
   // a->b, a->c
   // b->a, b->c
   // c->a, c->f, c->g
@@ -44,7 +44,6 @@ class FindShortestPath : public testing::Test {
   // f->h
   // g->f, g->h, g->k
   // h->x, k->x
-
 
   void singleSourceInit() {
     // From: {a}  To: {x}
@@ -136,13 +135,12 @@ class FindShortestPath : public testing::Test {
     }
   }
 
-
-    void SetUp() override {
+  void SetUp() override {
     qctx_ = std::make_unique<QueryContext>();
     singleSourceInit();
   }
 
-  protected:
+ protected:
   std::unique_ptr<QueryContext> qctx_;
   const int EDGE_TYPE = 1;
   const int EDGE_RANK = 0;
@@ -154,8 +152,6 @@ class FindShortestPath : public testing::Test {
   const std::vector<std::string> gnColNames_ = {
       kVid, "_stats", "_edge:+like:_type:_dst:_rank", "_expr"};
 };
-
-
 
 TEST_F(FindShortestPath, singleSourceShortestPath) {
   int steps = 5;
@@ -323,46 +319,9 @@ TEST_F(FindShortestPath, singleSourceShortestPath) {
   }
 }
 
-
-}// namespace graph;
-
-
-
-
-
-TEST_F(LogicExecutorsTest, FSP) {
-  std::string counter = "counter";
-  qctx_->ectx()->setValue(counter, 0);
-  // ++counter{0} <= 5
-  auto condition = RelationalExpression::makeLE(
-      pool_,
-      UnaryExpression::makeIncr(
-          pool_,
-          VersionedVariableExpression::make(pool_, counter, ConstantExpression::make(pool_, 0))),
-      ConstantExpression::make(pool_, static_cast<int32_t>(5)));
-  auto* start = StartNode::make(qctx_.get());
-  auto* loop = Loop::make(qctx_.get(), start, start, condition);
-  auto loopExe = Executor::create(loop, qctx_.get());
-  for (size_t i = 0; i < 5; ++i) {
-    auto f = loopExe->execute();
-    auto status = std::move(f).get();
-    EXPECT_TRUE(status.ok());
-    auto& result = qctx_->ectx()->getResult(loop->outputVar());
-    auto& value = result.value();
-    EXPECT_TRUE(value.isBool());
-    EXPECT_TRUE(value.getBool());
-  }
-
-  auto f = loopExe->execute();
-  auto status = std::move(f).get();
-  EXPECT_TRUE(status.ok());
-  auto& result = qctx_->ectx()->getResult(loop->outputVar());
-  auto& value = result.value();
-  EXPECT_TRUE(value.isBool());
-  EXPECT_FALSE(value.getBool());
-}
-
+}  // namespace graph
 }  // namespace nebula
+
 
 int main(int argc, char** argv) {
   folly::init(&argc, &argv, true);LAGS_max_rank);
