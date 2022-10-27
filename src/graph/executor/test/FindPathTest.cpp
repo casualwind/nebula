@@ -1141,8 +1141,15 @@ TEST_F(FindPathTest, NoresultInput) {
   {
     DataSet expectLeftVid;
     expectLeftVid.colNames = {nebula::kVid};
+    for (const auto& vid : {"b", "c"}) {
+      Row row;
+      row.values.emplace_back(vid);
+      expectLeftVid.rows.emplace_back(std::move(row));
+    }
     auto& resultVid = qctx_->ectx()->getResult(leftVidVar);
     auto resultLeftVid = resultVid.value().getDataSet();
+    std::sort(resultLeftVid.rows.begin(), resultLeftVid.rows.end());
+    std::sort(expectLeftVid.rows.begin(), expectLeftVid.rows.end());
     EXPECT_EQ(resultLeftVid, expectLeftVid);
     EXPECT_EQ(result.state(), Result::State::kSuccess);
   }
