@@ -10,6 +10,8 @@
 #include "graph/executor/algo/ProduceAllPathsExecutor.h"
 #include "graph/planner/plan/Algo.h"
 #include "graph/planner/plan/Logic.h"
+#include "graph/planner/ngql/PathPlanner.h"
+
 
 namespace nebula {
 namespace graph {
@@ -370,6 +372,7 @@ class FindPathTest : public testing::Test {
 
   void SetUp() override {
     qctx_ = std::make_unique<QueryContext>();
+    pool_ = qctx_->objPool();
     singleSourceInit();
     mulitSourceInit();
     allPathInit();
@@ -377,6 +380,7 @@ class FindPathTest : public testing::Test {
 
  protected:
   std::unique_ptr<QueryContext> qctx_;
+  ObjectPool* pool_;
   const int EDGE_TYPE = 1;
   const int EDGE_RANK = 0;
   DataSet single1StepFrom_;
@@ -1073,6 +1077,7 @@ TEST_F(FindPathTest, empthInput) {
 }
 
 TEST_F(FindPathTest, NoresultInput) {
+  const clock_t t0 = clock();
   int steps = 5;
   std::string leftVidVar = "leftVid";
   std::string rightVidVar = "rightVid";
@@ -1161,8 +1166,85 @@ TEST_F(FindPathTest, NoresultInput) {
     EXPECT_EQ(resultRightVid, expectRightVid);
     EXPECT_EQ(result.state(), Result::State::kSuccess);
   }
-  EXCEPT_TIME(0.1);
+  const clock_t t1 = clock();
+  const double elapsedSec = (t1 - t0) / (double)CLOCKS_PER_SEC;
+  EXPECT_GT(10.0, elapsedSec);
 }
+
+TEST_F(FindPathTest, time_test) {
+  std::string counter = "counter";
+  qctx_->ectx()->setValue(counter, 0);
+  auto steps = pathCtx_->steps.steps();
+  auto terminateEarlyVar = qctx->vctx()->anonVarGen()->getVar();
+  qctx->ectx()->setValue(terminateEarlyVar, false);
+
+    const clock_t t0 = clock();
+  int steps = 5;
+  std::string leftVidVar = "leftVid";
+  std::string rightVidVar = "rightVid";
+  std::string fromGNInput = "fromGNInput";
+  std::string toGNInput = "toGNInput";
+  qctx_->symTable()->newVariable(fromGNInput);
+  qctx_->symTable()->newVariable(toGNInput);
+
+  {
+    qctx_->symTable()->newVariable(leftVidVar);
+    DataSet fromVid;
+    fromVid.colNames = {nebula::kVid};
+    Row row;
+    row.values.emplace_back("a");
+    fromVid.rows.emplace_back(std::move(row));
+    ResultBuilder builder;
+    builder.value(std::move(fromVid)).iter(Iterator::Kind::kSequential);
+    qctx_->ectx()->setResult(leftVidVar, builder.build());
+  }
+  {
+    qctx_->symTable()->newVariable(rightVidVar);
+    DataSet toVid;
+    toVid.colNames = {nebula::kVid};
+    Row row;
+    row.values.emplace_back("t");
+    toVid.rows.emplace_back(std::move(row));
+    ResultBuilder builder;
+    builder.value(std::move(toVid)).iter(Iterator::Kind::kSequential);
+    qctx_->ectx()->setResult(rightVidVar, builder.build());
+  }
+  auto fromGN = StartNode::make(qctx_.get());
+  auto toGN = StartNode::make(qctx_.get());
+
+  auto* start = StartNode::make(qctx_.get());
+  auto* path = BFSShortestPath::make(start, fromGN, toGN, steps);
+  path->setLeftVar(fromGNInput);
+  path->setRightVar(toGNInput);
+  path->setLeftVidVar(leftVidVar);
+  path->setRightVidVar(rightVidVar);
+  path->setColNames(pathColNames_);
+  path->setTerminateEarlyVar(terminateEarlyVar);
+
+  auto* loopCondition = singlePairLoopCondition(steps, path->outputVar(), terminateEarlyVar);
+  auto* loop = Loop::make(qctx, nullptr, path, loopCondition);
+
+  auto loopExe = Executor::create(loop, qctx_.get());
+  for (size_t i = 0; i < 5; ++i) {
+    auto f = loopExe->execute();
+    auto status = std::move(f).get();
+    EXPECT_TRUE(status.ok());
+    auto& result = qctx_->ectx()->getResult(loop->outputVar());
+    auto& value = result.value();
+    EXPECT_TRUE(value.isBool());
+    EXPECT_TRUE(value.getBool());
+  }
+
+  auto f = loopExe->execute();
+  auto status = std::move(f).get();
+  EXPECT_TRUE(status.ok());
+  auto& result = qctx_->ectx()->getResult(loop->outputVar());
+  auto& value = result.value();
+  EXPECT_TRUE(value.isBool());
+  EXPECT_FALSE(value.getBool());
+}
+
+
 
 
 }  // namespace graph
