@@ -1100,7 +1100,6 @@ TEST_F(FindPathTest, NoresultInput) {
     row.values.emplace_back("t");
     toVid.rows.emplace_back(std::move(row));
     ResultBuilder builder;
-    ResultBuilder builder;
     builder.value(std::move(toVid)).iter(Iterator::Kind::kSequential);
     qctx_->ectx()->setResult(rightVidVar, builder.build());
   }
