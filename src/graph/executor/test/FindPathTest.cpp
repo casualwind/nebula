@@ -1098,7 +1098,7 @@ TEST_F(FindPathTest, NoresultInput) {
     toVid.colNames = {nebula::kVid};
     Row row;
     row.values.emplace_back("t");
-    fromVid.rows.emplace_back(std::move(row));
+    toVid.rows.emplace_back(std::move(row));
     ResultBuilder builder;
     ResultBuilder builder;
     builder.value(std::move(toVid)).iter(Iterator::Kind::kSequential);
