@@ -1161,6 +1161,7 @@ TEST_F(FindPathTest, NoresultInput) {
     EXPECT_EQ(resultRightVid, expectRightVid);
     EXPECT_EQ(result.state(), Result::State::kSuccess);
   }
+  EXPECT_TIME(0.1);
 }
 
 
