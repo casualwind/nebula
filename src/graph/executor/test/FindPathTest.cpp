@@ -1096,6 +1096,7 @@ TEST_F(FindPathTest, NoresultInput) {
     qctx_->symTable()->newVariable(rightVidVar);
     DataSet toVid;
     toVid.colNames = {nebula::kVid};
+    Row row;
     row.values.emplace_back("t");
     fromVid.rows.emplace_back(std::move(row));
     ResultBuilder builder;
