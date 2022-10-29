@@ -19,6 +19,9 @@
 #include "graph/planner/plan/Query.h"
 #include "graph/scheduler/Scheduler.h"
 
+using std::chrono::duration_cast;
+using std::chrono::microseconds;
+
 namespace nebula {
 namespace graph {
 class FindPathTest : public testing::Test {
@@ -379,6 +382,8 @@ class FindPathTest : public testing::Test {
   void SetUp() override {
     qctx_ = std::make_unique<QueryContext>();
     pool = qctx_->objPool();
+    scheduler_ = std::make_unique<Scheduler>(qctx_.get());
+    plan_ = qctx_->plan();
     singleSourceInit();
     mulitSourceInit();
     allPathInit();
