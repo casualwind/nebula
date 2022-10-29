@@ -402,7 +402,6 @@ class FindPathTest : public testing::Test {
  protected:
   std::unique_ptr<QueryContext> qctx_;
   ObjectPool* pool;
-  PathContext* pathCtx_{nullptr};
   const int EDGE_TYPE = 1;
   const int EDGE_RANK = 0;
   DataSet single1StepFrom_;
@@ -426,6 +425,7 @@ class FindPathTest : public testing::Test {
   ExecutionPlan* plan_;
   std::unique_ptr<Scheduler> scheduler_;
 };
+
 
 TEST_F(FindPathTest, singleSourceShortestPath) {
   int steps = 5;
