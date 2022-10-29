@@ -3,6 +3,8 @@
 // This source code is licensed under Apache 2.0 License.
 
 #include <gtest/gtest.h>
+#include <folly/init/Init.h>
+#include <folly/stop_watch.h>
 
 #include "graph/context/QueryContext.h"
 #include "graph/executor/algo/BFSShortestPathExecutor.h"
@@ -10,6 +12,7 @@
 #include "graph/executor/algo/ProduceAllPathsExecutor.h"
 #include "graph/planner/plan/Algo.h"
 #include "graph/planner/plan/Logic.h"
+#include "graph/context/QueryContext.h"
 
 namespace nebula {
 namespace graph {
