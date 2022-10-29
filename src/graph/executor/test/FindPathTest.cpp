@@ -11,6 +11,7 @@
 #include "graph/planner/plan/Algo.h"
 #include "graph/planner/plan/Logic.h"
 #include "graph/planner/ngql/PathPlanner.h"
+#include "parser/GQLParser.h"
 
 
 namespace nebula {
@@ -1209,40 +1210,59 @@ TEST_F(FindPathTest, time_test) {
     builder.value(std::move(toVid)).iter(Iterator::Kind::kSequential);
     qctx_->ectx()->setResult(rightVidVar, builder.build());
   }
+
+
   auto fromGN = StartNode::make(qctx_.get());
   auto toGN = StartNode::make(qctx_.get());
 
-  auto* start = StartNode::make(qctx_.get());
-  auto* path = BFSShortestPath::make(start, fromGN, toGN, steps);
-  path->setLeftVar(fromGNInput);
-  path->setRightVar(toGNInput);
-  path->setLeftVidVar(leftVidVar);
-  path->setRightVidVar(rightVidVar);
-  path->setColNames(pathColNames_);
-  path->setTerminateEarlyVar(terminateEarlyVar);
+  std::string query = "FIND SHORTEST PATH FROM \"a\" TO \"b\" OVER like";
+  GQLParser parser(qctx_.get());
+  auto result = parser.parse(std::move(query));
+  ASSERT_TRUE(result.ok()) << result.status();
 
-  auto* loopCondition = singlePairLoopCondition(steps, path->outputVar(), terminateEarlyVar);
-  auto* loop = Loop::make(qctx, nullptr, path, loopCondition);
 
-  auto loopExe = Executor::create(loop, qctx_.get());
-  for (size_t i = 0; i < 5; ++i) {
-    auto f = loopExe->execute();
-    auto status = std::move(f).get();
-    EXPECT_TRUE(status.ok());
-    auto& result = qctx_->ectx()->getResult(loop->outputVar());
-    auto& value = result.value();
-    EXPECT_TRUE(value.isBool());
-    EXPECT_TRUE(value.getBool());
-  }
 
-  auto f = loopExe->execute();
-  auto status = std::move(f).get();
-  EXPECT_TRUE(status.ok());
-  auto& result = qctx_->ectx()->getResult(loop->outputVar());
-  auto& value = result.value();
-  EXPECT_TRUE(value.isBool());
-  EXPECT_FALSE(value.getBool());
-}
+
+
+
+
+  //auto* start = StartNode::make(qctx_.get());
+  //auto* path = BFSShortestPath::make(start, fromGN, toGN, steps);
+  //path->setLeftVar(fromGNInput);
+  //path->setRightVar(toGNInput);
+  //path->setLeftVidVar(leftVidVar);
+  //path->setRightVidVar(rightVidVar);
+  //path->setColNames(pathColNames_);
+  //path->setTerminateEarlyVar(terminateEarlyVar);
+
+  //auto* loopCondition = singlePairLoopCondition(steps, path->outputVar(), terminateEarlyVar);
+  //auto* loop = Loop::make(qctx, nullptr, path, loopCondition);
+
+  //auto loopExe = Executor::create(loop, qctx_.get());
+  //auto f = loopExe->execute();
+  //auto status = std::move(f).get();
+  //EXPECT_TRUE(status.ok());
+
+
+
+//  for (size_t i = 0; i < 5; ++i) {
+//    auto f = loopExe->execute();
+//    auto status = std::move(f).get();
+//    EXPECT_TRUE(status.ok());
+//    auto& result = qctx_->ectx()->getResult(loop->outputVar());
+//    auto& value = result.value();
+//    EXPECT_TRUE(value.isBool());
+//    EXPECT_TRUE(value.getBool());
+//  }
+//
+//  auto f = loopExe->execute();
+//  auto status = std::move(f).get();
+//  EXPECT_TRUE(status.ok());
+//  auto& result = qctx_->ectx()->getResult(loop->outputVar());
+//  auto& value = result.value();
+//  EXPECT_TRUE(value.isBool());
+//  EXPECT_FALSE(value.getBool());
+//}
 
 
 
