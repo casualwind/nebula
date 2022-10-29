@@ -376,9 +376,25 @@ class FindPathTest : public testing::Test {
     allPathInit();
   }
 
+  void run() {
+    ASSERT_NE(plan_->root(), nullptr);
+    watch_.reset();
+    scheduler_->schedule()
+        .thenValue([](Status s) { ASSERT_TRUE(s.ok()) << s.toString(); })
+        .onError(folly::tag_t<ExecutionError>{},
+                 [](const ExecutionError& e) { LOG(ERROR) << e.what(); })
+        .onError(folly::tag_t<std::exception>{},
+                 [](const std::exception& e) { LOG(ERROR) << "exception: " << e.what(); })
+        .ensure([this]() {
+          auto us = duration_cast<microseconds>(watch_.elapsed());
+          LOG(INFO) << "elapsed time: " << us.count() << "us";
+        });
+  }
+
  protected:
   std::unique_ptr<QueryContext> qctx_;
   ObjectPool* pool;
+  PathContext* pathCtx_{nullptr};
   const int EDGE_TYPE = 1;
   const int EDGE_RANK = 0;
   DataSet single1StepFrom_;
@@ -398,6 +414,9 @@ class FindPathTest : public testing::Test {
   const std::vector<std::string> pathColNames_ = {"path"};
   const std::vector<std::string> gnColNames_ = {
       kVid, "_stats", "_edge:+like:_type:_dst:_rank", "_expr"};
+  folly::stop_watch<> watch_;
+  ExecutionPlan* plan_;
+  std::unique_ptr<Scheduler> scheduler_;
 };
 
 TEST_F(FindPathTest, singleSourceShortestPath) {
@@ -1079,46 +1098,49 @@ TEST_F(FindPathTest, empthInput) {
 
 
 TEST_F(FindPathTest, time_test) {
+
+
   std::string counter = "counter";
   qctx_->ectx()->setValue(counter, 0);
-  auto steps = pathCtx_->steps.steps();
-  auto terminateEarlyVar = qctx->vctx()->anonVarGen()->getVar();
-  qctx->ectx()->setValue(terminateEarlyVar, false);
 
-  const clock_t t0 = clock();
-  int steps = 5;
-  std::string leftVidVar = "leftVid";
-  std::string rightVidVar = "rightVid";
-  std::string fromGNInput = "fromGNInput";
-  std::string toGNInput = "toGNInput";
-  qctx_->symTable()->newVariable(fromGNInput);
-  qctx_->symTable()->newVariable(toGNInput);
+  //auto steps = pathCtx_->steps.steps();
+  //auto terminateEarlyVar = qctx->vctx()->anonVarGen()->getVar();
+  //qctx->ectx()->setValue(terminateEarlyVar, false);
 
-  {
-    qctx_->symTable()->newVariable(leftVidVar);
-    DataSet fromVid;
-    fromVid.colNames = {nebula::kVid};
-    Row row;
-    row.values.emplace_back("a");
-    fromVid.rows.emplace_back(std::move(row));
-    ResultBuilder builder;
-    builder.value(std::move(fromVid)).iter(Iterator::Kind::kSequential);
-    qctx_->ectx()->setResult(leftVidVar, builder.build());
-  }
-  {
-    qctx_->symTable()->newVariable(rightVidVar);
-    DataSet toVid;
-    toVid.colNames = {nebula::kVid};
-    Row row;
-    row.values.emplace_back("t");
-    toVid.rows.emplace_back(std::move(row));
-    ResultBuilder builder;
-    builder.value(std::move(toVid)).iter(Iterator::Kind::kSequential);
-    qctx_->ectx()->setResult(rightVidVar, builder.build());
-  }
+  //const clock_t t0 = clock();
+  //int steps = 5;
+  //std::string leftVidVar = "leftVid";
+  //std::string rightVidVar = "rightVid";
+  //std::string fromGNInput = "fromGNInput";
+  //std::string toGNInput = "toGNInput";
+  //qctx_->symTable()->newVariable(fromGNInput);
+  //qctx_->symTable()->newVariable(toGNInput);
 
-  auto fromGN = StartNode::make(qctx_.get());
-  auto toGN = StartNode::make(qctx_.get());
+  //{
+  //  qctx_->symTable()->newVariable(leftVidVar);
+  //  DataSet fromVid;
+  //  fromVid.colNames = {nebula::kVid};
+  //  Row row;
+  //  row.values.emplace_back("a");
+  //  fromVid.rows.emplace_back(std::move(row));
+  //  ResultBuilder builder;
+  //  builder.value(std::move(fromVid)).iter(Iterator::Kind::kSequential);
+  //  qctx_->ectx()->setResult(leftVidVar, builder.build());
+  //}
+  //{
+  //  qctx_->symTable()->newVariable(rightVidVar);
+  //  DataSet toVid;
+  //  toVid.colNames = {nebula::kVid};
+  //  Row row;
+  //  row.values.emplace_back("t");
+  //  toVid.rows.emplace_back(std::move(row));
+  //  ResultBuilder builder;
+  //  builder.value(std::move(toVid)).iter(Iterator::Kind::kSequential);
+  //  qctx_->ectx()->setResult(rightVidVar, builder.build());
+  //}
+
+  //auto fromGN = StartNode::make(qctx_.get());
+  //auto toGN = StartNode::make(qctx_.get());
 
   std::string query = "FIND SHORTEST PATH FROM \"a\" TO \"b\" OVER like";
   GQLParser parser(qctx_.get());
