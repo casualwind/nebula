@@ -1078,55 +1078,53 @@ TEST_F(FindPathTest, empthInput) {
 
 
 
-//TEST_F(FindPathTest, time_test) {
-//  std::string counter = "counter";
-//  qctx_->ectx()->setValue(counter, 0);
-//  auto steps = pathCtx_->steps.steps();
-//  auto terminateEarlyVar = qctx->vctx()->anonVarGen()->getVar();
-//  qctx->ectx()->setValue(terminateEarlyVar, false);
-//
-//    const clock_t t0 = clock();
-//  int steps = 5;
-//  std::string leftVidVar = "leftVid";
-//  std::string rightVidVar = "rightVid";
-//  std::string fromGNInput = "fromGNInput";
-//  std::string toGNInput = "toGNInput";
-//  qctx_->symTable()->newVariable(fromGNInput);
-//  qctx_->symTable()->newVariable(toGNInput);
-//
-//  {
-//    qctx_->symTable()->newVariable(leftVidVar);
-//    DataSet fromVid;
-//    fromVid.colNames = {nebula::kVid};
-//    Row row;
-//    row.values.emplace_back("a");
-//    fromVid.rows.emplace_back(std::move(row));
-//    ResultBuilder builder;
-//    builder.value(std::move(fromVid)).iter(Iterator::Kind::kSequential);
-//    qctx_->ectx()->setResult(leftVidVar, builder.build());
-//  }
-//  {
-//    qctx_->symTable()->newVariable(rightVidVar);
-//    DataSet toVid;
-//    toVid.colNames = {nebula::kVid};
-//    Row row;
-//    row.values.emplace_back("t");
-//    toVid.rows.emplace_back(std::move(row));
-//    ResultBuilder builder;
-//    builder.value(std::move(toVid)).iter(Iterator::Kind::kSequential);
-//    qctx_->ectx()->setResult(rightVidVar, builder.build());
-//  }
-//
-//
-//  auto fromGN = StartNode::make(qctx_.get());
-//  auto toGN = StartNode::make(qctx_.get());
-//
-//  std::string query = "FIND SHORTEST PATH FROM \"a\" TO \"b\" OVER like";
-//  GQLParser parser(qctx_.get());
-//  auto result = parser.parse(std::move(query));
-//  ASSERT_TRUE(result.ok()) << result.status();
-//
+TEST_F(FindPathTest, time_test) {
+  std::string counter = "counter";
+  qctx_->ectx()->setValue(counter, 0);
+  auto steps = pathCtx_->steps.steps();
+  auto terminateEarlyVar = qctx->vctx()->anonVarGen()->getVar();
+  qctx->ectx()->setValue(terminateEarlyVar, false);
 
+  const clock_t t0 = clock();
+  int steps = 5;
+  std::string leftVidVar = "leftVid";
+  std::string rightVidVar = "rightVid";
+  std::string fromGNInput = "fromGNInput";
+  std::string toGNInput = "toGNInput";
+  qctx_->symTable()->newVariable(fromGNInput);
+  qctx_->symTable()->newVariable(toGNInput);
+
+  {
+    qctx_->symTable()->newVariable(leftVidVar);
+    DataSet fromVid;
+    fromVid.colNames = {nebula::kVid};
+    Row row;
+    row.values.emplace_back("a");
+    fromVid.rows.emplace_back(std::move(row));
+    ResultBuilder builder;
+    builder.value(std::move(fromVid)).iter(Iterator::Kind::kSequential);
+    qctx_->ectx()->setResult(leftVidVar, builder.build());
+  }
+  {
+    qctx_->symTable()->newVariable(rightVidVar);
+    DataSet toVid;
+    toVid.colNames = {nebula::kVid};
+    Row row;
+    row.values.emplace_back("t");
+    toVid.rows.emplace_back(std::move(row));
+    ResultBuilder builder;
+    builder.value(std::move(toVid)).iter(Iterator::Kind::kSequential);
+    qctx_->ectx()->setResult(rightVidVar, builder.build());
+  }
+
+  auto fromGN = StartNode::make(qctx_.get());
+  auto toGN = StartNode::make(qctx_.get());
+
+  std::string query = "FIND SHORTEST PATH FROM \"a\" TO \"b\" OVER like";
+  GQLParser parser(qctx_.get());
+  auto result = parser.parse(std::move(query));
+  ASSERT_TRUE(result.ok()) << result.status();
+}
 
 
 
