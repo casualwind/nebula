@@ -13,6 +13,11 @@
 #include "graph/planner/plan/Algo.h"
 #include "graph/planner/plan/Logic.h"
 #include "graph/context/QueryContext.h"
+#include "graph/executor/ExecutionError.h"
+#include "graph/executor/Executor.h"
+#include "graph/planner/plan/ExecutionPlan.h"
+#include "graph/planner/plan/Query.h"
+#include "graph/scheduler/Scheduler.h"
 
 namespace nebula {
 namespace graph {
