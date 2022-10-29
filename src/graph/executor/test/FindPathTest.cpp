@@ -378,6 +378,7 @@ class FindPathTest : public testing::Test {
     }
   }
 
+ public:
   void SetUp() override {
     qctx_ = std::make_unique<QueryContext>();
     pool = qctx_->objPool();
