@@ -6,7 +6,6 @@
 #include <folly/init/Init.h>
 #include <folly/stop_watch.h>
 
-#include "graph/context/QueryContext.h"
 #include "graph/executor/algo/BFSShortestPathExecutor.h"
 #include "graph/executor/algo/MultiShortestPathExecutor.h"
 #include "graph/executor/algo/ProduceAllPathsExecutor.h"
@@ -389,21 +388,6 @@ class FindPathTest : public testing::Test {
     allPathInit();
   }
 
-  void run() {
-    ASSERT_NE(plan_->root(), nullptr);
-    watch_.reset();
-    scheduler_->schedule()
-        .thenValue([](Status s) { ASSERT_TRUE(s.ok()) << s.toString(); })
-        .onError(folly::tag_t<ExecutionError>{},
-                 [](const ExecutionError& e) { LOG(ERROR) << e.what(); })
-        .onError(folly::tag_t<std::exception>{},
-                 [](const std::exception& e) { LOG(ERROR) << "exception: " << e.what(); })
-        .ensure([this]() {
-          auto us = duration_cast<microseconds>(watch_.elapsed());
-          LOG(INFO) << "elapsed time: " << us.count() << "us";
-        });
-  }
-
  protected:
   std::unique_ptr<QueryContext> qctx_;
   ObjectPool* pool;
@@ -429,6 +413,24 @@ class FindPathTest : public testing::Test {
   folly::stop_watch<> watch_;
   ExecutionPlan* plan_;
   std::unique_ptr<Scheduler> scheduler_;
+
+ public:
+  void run() {
+    ASSERT_NE(plan_->root(), nullptr);
+    watch_.reset();
+    scheduler_->schedule()
+        .thenValue([](Status s) { ASSERT_TRUE(s.ok()) << s.toString(); })
+        .onError(folly::tag_t<ExecutionError>{},
+                 [](const ExecutionError& e) { LOG(ERROR) << e.what(); })
+        .onError(folly::tag_t<std::exception>{},
+                 [](const std::exception& e) { LOG(ERROR) << "exception: " << e.what(); })
+        .ensure([this]() {
+          auto us = duration_cast<microseconds>(watch_.elapsed());
+          LOG(INFO) << "elapsed time: " << us.count() << "us";
+        });
+  }
+
+
 };
 
 
