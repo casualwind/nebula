@@ -3,8 +3,6 @@
 // This source code is licensed under Apache 2.0 License.
 
 #include <gtest/gtest.h>
-#include <folly/init/Init.h>
-#include <folly/stop_watch.h>
 
 #include "graph/executor/algo/BFSShortestPathExecutor.h"
 #include "graph/executor/algo/MultiShortestPathExecutor.h"
@@ -12,11 +10,6 @@
 #include "graph/planner/plan/Algo.h"
 #include "graph/planner/plan/Logic.h"
 #include "graph/context/QueryContext.h"
-#include "graph/executor/ExecutionError.h"
-#include "graph/executor/Executor.h"
-#include "graph/planner/plan/ExecutionPlan.h"
-#include "graph/planner/plan/Query.h"
-#include "graph/scheduler/Scheduler.h"
 
 using std::chrono::duration_cast;
 using std::chrono::microseconds;
@@ -382,7 +375,6 @@ class FindPathTest : public testing::Test {
   void SetUp() override {
     qctx_ = std::make_unique<QueryContext>();
     pool = qctx_->objPool();
-    scheduler_ = std::make_unique<Scheduler>(qctx_.get());
     plan_ = qctx_->plan();
     singleSourceInit();
     mulitSourceInit();
@@ -411,9 +403,6 @@ class FindPathTest : public testing::Test {
   const std::vector<std::string> pathColNames_ = {"path"};
   const std::vector<std::string> gnColNames_ = {
       kVid, "_stats", "_edge:+like:_type:_dst:_rank", "_expr"};
-  folly::stop_watch<> watch_;
-  ExecutionPlan* plan_;
-  std::unique_ptr<Scheduler> scheduler_;
 
 
 
