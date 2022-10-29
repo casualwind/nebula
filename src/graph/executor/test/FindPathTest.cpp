@@ -381,7 +381,6 @@ class FindPathTest : public testing::Test {
 
  protected:
   std::unique_ptr<QueryContext> qctx_;
-  ObjectPool* pool_;
   const int EDGE_TYPE = 1;
   const int EDGE_RANK = 0;
   DataSet single1StepFrom_;
