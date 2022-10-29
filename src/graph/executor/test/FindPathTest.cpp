@@ -1110,7 +1110,7 @@ TEST_F(FindPathTest, empthInput) {
 
 
 
-
+/*
 
 TEST_F(FindPathTest, time_test) {
 
@@ -1299,7 +1299,7 @@ TEST_F(FindPathTest, time_test) {
 //   const double elapsedSec = (t1 - t0) / (double)CLOCKS_PER_SEC;
 //   EXPECT_GT(10.0, elapsedSec);
 // }
-
+*/
 
 }  // namespace graph
 }  // namespace nebula
