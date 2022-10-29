@@ -10,9 +10,6 @@
 #include "graph/executor/algo/ProduceAllPathsExecutor.h"
 #include "graph/planner/plan/Algo.h"
 #include "graph/planner/plan/Logic.h"
-#include "graph/planner/ngql/PathPlanner.h"
-#include "parser/GQLParser.h"
-
 
 namespace nebula {
 namespace graph {
@@ -373,7 +370,6 @@ class FindPathTest : public testing::Test {
 
   void SetUp() override {
     qctx_ = std::make_unique<QueryContext>();
-    pool_ = qctx_->objPool();
     singleSourceInit();
     mulitSourceInit();
     allPathInit();
